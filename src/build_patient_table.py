@@ -19,6 +19,19 @@ def get_group(hba1c):
     else:
         return "t2d"
 
+#Création de la nouvelle colonne "group" en appliquant la fonction get_group à la colonne "A1c PDL (Lab)"
 bio["group"] = bio["A1c PDL (Lab)"].apply(get_group)
+
+# Déplacer la colonne en 2e position
+cols = bio.columns.tolist()
+cols.insert(1, cols.pop(cols.index("group")))
+bio = bio[cols]
+
+# Sauvegarder le nouveau fichier
+bio.to_csv("data/processed/bio_with_group.csv", index=False)
+
+print("Fichier créé : data/processed/bio_with_group.csv")
+print(bio.head())
+
 
 
