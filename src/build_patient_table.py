@@ -18,4 +18,7 @@ def get_group(hba1c):
         return "prediabetes"
     else:
         return "t2d"
-  
+
+bio["group"] = bio["A1c PDL (Lab)"].apply(get_group)
+
+
