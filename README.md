@@ -1,2 +1,2 @@
-# projet_MachLearn_Rapahel_Mathieu
+# Projet Machine Learning - Diabète
 Projet de Machine Learning - Palliere Raphael &amp; Bouny Mathieu
