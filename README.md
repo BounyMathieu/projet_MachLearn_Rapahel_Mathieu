@@ -1,6 +1,9 @@
 # Projet de Machine Learning - Palliere Raphael &amp; Bouny Mathieu
 
 
+Lien JDD sur PhysioNet : https://physionet.org/content/cgmacros/1.0.0/
+
+
 
 | Nom de la variable | Type de donnée | Description | Explication de la signification |
 | :--- | :--- | :--- | :--- |
