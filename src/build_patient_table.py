@@ -9,7 +9,7 @@
 import pandas as pd
 
 # Lire le fichier bio.csv
-bio = pd.read_csv("data/raw/cgmacros/bio.csv")
+bio = pd.read_csv("Chemin/bio.csv") # Attentionnnnnnnnn au chemin
 
 def get_group(hba1c):
     if hba1c < 5.7:
