@@ -56,46 +56,29 @@ Deux approches : **régression** (valeur exacte mg/dL) + **classification** (hyp
 
 ## Structure du dépôt
 
+```
 .
-
 ├── README.md
-
 ├── requirements.txt
-
 ├── .gitignore
-
 ├── data/
-
 │ └── README.md # Instructions accès PhysioNet
-
 ├── notebooks/
-
 │ ├── 01_EDA.ipynb # Analyse exploratoire
-
 │ ├── 02_preprocessing.ipynb
-
 │ └── 03_modelling.ipynb
-
 ├── src/
-
 │ ├── meal_window_builder.py # Fenêtrage repas
-
 │ ├── preprocessing.py
-
 │ ├── train.py
-
 │ └── utils.py
-
 ├── dashboard/
-
 │ └── app.py # Streamlit
-
 └── report/
-
 ├── rapport.pdf
-
 └── figures/
 
+```
 
 ---
 
@@ -111,31 +94,20 @@ pip install -r requirements.txt
 
 ## Pipeline
 
-
+```
 bio.csv + CGMacros-0XX.xlsx
-
         ↓
-        
 Ajout colonne group (via A1c)
-
 Suppression patient n°12 (comorbidité cardiaque)
-
 Suppression signal Dexcom G6
-
         ↓
-
 meal_window_builder.py → ~1 700 fenêtres repas
-
 Filtre : min 30 points valides sur 60 min pré-repas
-
         ↓
-
 GroupKFold (groups = patient_id)  ← anti data leakage
-
         ↓
-
 Régression / Classification
-
+```
 
 
 ---
