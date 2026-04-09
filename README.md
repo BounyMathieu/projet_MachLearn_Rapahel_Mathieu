@@ -58,7 +58,7 @@ Deux approches : **prédiction** (valeur exacte mg/dL) + **classification** (hyp
 
 ```
 
-├── **README.md**
+├── README.md
 │
 ├── requirements.txt
 │
