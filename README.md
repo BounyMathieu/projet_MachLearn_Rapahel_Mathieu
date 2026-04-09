@@ -85,8 +85,7 @@ Deux approches : **prédiction** (valeur exacte mg/dL) + **classification** (hyp
 │ │ 
 │ ├── build_patient_table.py
 │ ├── column_description_meal_window.py
-│ ├── meal_windows_builder.py
-│ └── README.md
+│ └── meal_windows_builder.py
 │
 ├── dashboard/
 │ └── app.py        # Streamlit
