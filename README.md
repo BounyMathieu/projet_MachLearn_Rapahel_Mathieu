@@ -11,7 +11,6 @@ Deux approches : **régression** (valeur exacte mg/dL) + **classification** (hyp
 
 **Source** : [PhysioNet CGMacros v1.0.0](https://physionet.org/content/cgmacros/1.0.0/)
 
-> Données non versionnées (accord PhysioNet requis). Voir `data/README.md` pour instructions d'accès.
 
 | Paramètre | Valeur |
 | :--- | :--- |
