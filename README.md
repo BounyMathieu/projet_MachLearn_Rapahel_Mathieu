@@ -66,22 +66,31 @@ Deux approches : **prédiction** (valeur exacte mg/dL) + **classification** (hyp
 │
 ├── data/
 │ ├── processed
+│ │ └── bio_with_group.csv
+│ │ └── column_description_meal_window.csv
+│ │ └── meal_windows_dataset.csv
+│ │ └── test.py
+│ │
 │ ├── raw
-│ │ └── README.md # Instructions accès PhysioNet
+│ │ └── README.md        # Instructions accès PhysioNet
 │
 ├── notebooks/
-│ ├── 01_EDA.ipynb # Analyse exploratoire
+│ ├── 01_EDA.ipynb        # Analyse exploratoire
 │ ├── 02_preprocessing.ipynb
 │ └── 03_modelling.ipynb
 │
 ├── src/
-│ ├── meal_window_builder.py # Fenêtrage repas
-│ ├── preprocessing.py
-│ ├── train.py
-│ └── utils.py
+│ ├── Analyse exploratoire
+│ │ └── README.md
+│ │ └── graphes_repartitions.ipynb
+│ │ 
+│ ├── build_patient_table.py
+│ ├── column_description_meal_window.py
+│ ├── meal_windows_builder.py
+│ └── README.md
 │
 ├── dashboard/
-│ └── app.py # Streamlit
+│ └── app.py        # Streamlit
 │ └── report/
 │
 ├── rapport.pdf
