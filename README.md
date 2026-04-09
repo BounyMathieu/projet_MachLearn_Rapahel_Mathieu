@@ -3,7 +3,7 @@
 ## Objectif
 
 Prédire la réponse glycémique postprandiale (t+60 min) via CGM, macronutriments, activité physique et profil clinique.
-Deux approches : **régression** (valeur exacte mg/dL) + **classification** (hypo / normo / hyperglycémie).
+Deux approches : **prédiction** (valeur exacte mg/dL) + **classification** (hypo / normo / hyperglycémie).
 
 ---
 
@@ -15,12 +15,12 @@ Deux approches : **régression** (valeur exacte mg/dL) + **classification** (hyp
 | Paramètre | Valeur |
 | :--- | :--- |
 | Participants | 44 (45 - patient n°12 exclu) |
-| Groupes | 15 sains / 16 prédiabétiques / 14 T2D |
+| Groupes | 15 sains / 16 prédiabétiques / 14 Diabétiques (Type2) |
 | Durée suivi | 10 jours en conditions réelles |
 | Capteur retenu | Abbott FreeStyle Libre Pro (15 min, interpolé 1 min) |
 | Capteur exclu | Dexcom G6 Pro (données manquantes, incohérences) |
 | Points glycémie bruts | ~129 600 |
-| Fenêtres repas extraites | ~1 700 |
+| Fenêtres repas extraites | 1 700 |
 
 ### Variables `bio.csv`
 
