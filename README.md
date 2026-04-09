@@ -73,6 +73,14 @@ Deux approches : **prédiction** (valeur exacte mg/dL) + **classification** (hyp
 │ │
 │ ├── raw
 │ │ └── README.md        # Instructions accès PhysioNet
+│ │
+│ ├── results
+│ │ └── baseline_linear
+│ │ │ └── baseline_results.csv
+│ │ │ └── coefficients_configA_t60.csv
+│ │ │ └── coefficients_configA_t60.png
+│ │ │ └── rmse_comparaison_A_vs_B.png
+│ │ │ └── scatter_configA_t60.png
 │
 ├── notebooks/
 │ ├── 01_EDA.ipynb        # Analyse exploratoire
