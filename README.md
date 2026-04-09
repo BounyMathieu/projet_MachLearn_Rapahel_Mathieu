@@ -114,10 +114,11 @@ Régression / Classification
 
 ## Auteurs
 
-Palliere Raphael & Bouny Mathieu
+| Nom | Mail |
+| :--- | :--- |
+| Palliere Raphael | palliere.raphael@icloud.com |
+| Bouny Mathieu | bouny.mathieu@gmail.com |
 
-palliere.raphael@icloud.com
-bouny.mathieu@gmail.com
 
 Accréditation CITI Program - recherche sur sujets humains
 
