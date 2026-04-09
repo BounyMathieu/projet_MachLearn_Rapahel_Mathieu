@@ -85,8 +85,8 @@ Deux approches : **régression** (valeur exacte mg/dL) + **classification** (hyp
 ## Installation
 
 ```bash
-git clone https://github.com/<user>/<repo>](https://github.com/BounyMathieu/projet_MachLearn_Rapahel_Mathieu).git
-cd <repo>
+git clone https://github.com/BounyMathieu/projet_MachLearn_Rapahel_Mathieu.git
+cd projet_MachLearn_Rapahel_Mathieu
 pip install -r requirements.txt
 ```
 
