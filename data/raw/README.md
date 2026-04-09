@@ -1,6 +1,6 @@
 ## Accès aux données
 
-Les données CGMacros ne sont pas versionnées dans ce dépôt.
+Les données CGMacros ne sont pas disponibles dans ce dépôt.
 
 **Accès restreint - certification obligatoire avant téléchargement.**
 
