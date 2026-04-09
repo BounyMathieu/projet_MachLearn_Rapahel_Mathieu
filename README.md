@@ -81,7 +81,6 @@ Deux approches : **prédiction** (valeur exacte mg/dL) + **classification** (hyp
 │
 ├── src/
 │ ├── Analyse exploratoire
-│ │ └── README.md
 │ │ └── graphes_repartitions.ipynb
 │ │ 
 │ ├── build_patient_table.py
