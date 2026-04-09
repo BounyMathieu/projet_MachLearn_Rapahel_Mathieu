@@ -57,26 +57,35 @@ Deux approches : **régression** (valeur exacte mg/dL) + **classification** (hyp
 ## Structure du dépôt
 
 ```
-.
+
 ├── README.md
+│
 ├── requirements.txt
+│
 ├── .gitignore
+│
 ├── data/
-│ └── README.md # Instructions accès PhysioNet
+│ ├── processed
+│ ├── raw
+│ │ └── README.md # Instructions accès PhysioNet
+│
 ├── notebooks/
 │ ├── 01_EDA.ipynb # Analyse exploratoire
 │ ├── 02_preprocessing.ipynb
 │ └── 03_modelling.ipynb
+│
 ├── src/
 │ ├── meal_window_builder.py # Fenêtrage repas
 │ ├── preprocessing.py
 │ ├── train.py
 │ └── utils.py
+│
 ├── dashboard/
 │ └── app.py # Streamlit
-└── report/
+│ └── report/
+│
 ├── rapport.pdf
-└── figures/
+│ └── figures/
 
 ```
 
