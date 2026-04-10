@@ -1,4 +1,4 @@
-## Accès aux données
+# Accès aux données
 
 Les données CGMacros ne sont pas disponibles dans ce dépôt.
 
