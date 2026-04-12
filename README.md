@@ -1,9 +1,38 @@
 # Projet Machine Learning - Palliere Raphael & Bouny Mathieu
 
+---
+
 ## Objectif
 
 Prédire la réponse glycémique postprandiale (t+60 min) via CGM, macronutriments, activité physique et profil clinique.
 Deux approches : **prédiction** (valeur exacte mg/dL) + **classification** (hypo / normo / hyperglycémie).
+
+### Contexte et motivation
+
+La prédiction de la réponse glycémique postprandiale représente un enjeu clinique majeur dans la prévention et la gestion des troubles métaboliques. Face à la prévalence croissante du diabète et du prédiabète, nous nous sommes fixé pour objectif de développer un modèle de Machine Learning capable de prédire avec fiabilité la glycémie 60 minutes après le début d'un repas. Ce projet, réalisé en collaboration avec nos collègues de l'école, s'inscrit dans une démarche d'innovation clinique où les données glycémiques continues rencontrent l'intelligence artificielle.
+
+Le défi réside dans la complexité des interactions biologiques : la réponse glycémique ne dépend pas seulement de la composition du repas, mais aussi de l'historique métabolique du patient, de son activité physique, de son profil clinique global et potentiellement de sa microbiote. Nous avons choisi d'explorer simultanément une population diversifiée — sujets sains, prédiabétiques et diabétiques de type 2 — afin de capturer cette variabilité et de construire un modèle robuste et généralisable.
+
+### Présentation du dataset CGMacros
+
+Nous disposons d'un dataset original comportant 45 participants suivis en conditions de vie réelle sur 10 jours consécutifs. Cette population se répartit équitablement entre trois profils : 15 sujets sains, 16 prédiabétiques et 14 diabétiques de type 2. La caractérisation physiologique repose sur un ensemble riche de mesures : variables biologiques cliniques (HbA1c, glycémie à jeun, insuline, lipides), données de capteurs de glycémie continue (Dexcom G6 Pro et Abbott FreeStyle Libre), suivi d'activité physique par Fitbit, et données nutritionnelles détaillées des repas.
+
+En particulier, nous avons accumulé environ 129 600 points glycémiques au total, soit une résolution temporelle très fine grâce aux deux capteurs CGM interpolés à la minute. Les données nutritionnelles incluent les macronutriments essentiels (glucides, protéines, lipides, fibres) et l'apport calorique total. L'ajout de données microbiote — 1 979 bactéries identifiées — ouvre des perspectives intéressantes, bien que leur utilisation dans notre modèle reste encore exploratoire. L'ensemble du dataset est accessible via PhysioNet après certification CITI Program, garantissant le respect des normes éthiques.
+
+### Difficultés rencontrées et choix méthodologiques
+
+Nous avons rapidement identifié plusieurs défis pratiques lors du nettoyage des données. Le capteur Dexcom GL a présenté des lacunes importantes et des divergences significatives avec les mesures de l'Abbott FreeStyle Libre. Après une évaluation comparative approfondie, nous avons pris la décision d'utiliser exclusivement les données du capteur Abbott, ce qui nous garantit une cohérence et une fiabilité accrues.
+
+Un autre point notable concerne l'exclusion du patient n°12, dont les valeurs de triglycérides et LDL étaient anormalement élevées. Bien que ces valeurs ne soient pas techniquement aberrantes, elles reflètent un problème cardiaque indépendant de la pathologie glycémique principale, justifiant ainsi son exclusion de l'analyse. Nous avons également observé un déséquilibre dans la distribution du genre (environ deux fois plus de femmes) et de l'ethnie (majorité hispanique et latino-américaine), un biais que nous avons documenté et qui doit être pris en compte lors de l'interprétation des résultats.
+
+L'extraction des fenêtres repas s'est avérée délicate : nous avons identifié environ 1 700 épisodes repas à partir des 45 patients (en moyenne trois repas et collations par jour). Une corrélation intra-patient forte nous a poussés à adopter une validation croisée GroupKFold stratifiée par patient, ce qui prévient le data leakage et garantit une évaluation réaliste de la généralisation du modèle.
+
+### Protocole de validation et approche méthodologique
+
+Nous avons opté pour une double approche : d'une part une tâche de régression visant à prédire la valeur glycémique exacte aux horizons t+30, t+60 et t+90 minutes, et d'autre part une tâche de classification multiclasse permettant de prédire le risque d'hypoglycémie, d'euglycémie ou d'hyperglycémie. Cette dualité nous offre à la fois une granularité numérique et une pertinence clinique.
+
+Pour la régression, nous utilisons les métriques classiques : RMSE, MAE et R². Pour la classification, nous nous appuyons sur la précision, le rappel et le score F1 afin de capturer les performances de façon équilibrée. Les modèles testés couvrent un spectre allant de la régression linéaire (baseline simple) aux arbres de décision, Random Forest et réseaux de neurones, ce qui nous permet d'identifier le meilleur compromis entre complexité et performance.
+
 
 ---
 
