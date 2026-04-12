@@ -45,7 +45,7 @@ MODEL_NAME = "LogisticRegression"
 
 #Hyperparamètres de la régression logistique;
 LR_PARAMS = {
-    "C":           1.0, #Inverse de la force de régularisation (1.0 = standard)
+    "C": 1.0, #Inverse de la force de régularisation (1.0 = standard)
     "max_iter": 1000, #Nombre maximal d'itérations pour la convergence
     "class_weight": "balanced", #Correction du déséquilibre des classes
     "solver": "lbfgs", #Algorithme d'optimisation efficace pour les petits datasets
