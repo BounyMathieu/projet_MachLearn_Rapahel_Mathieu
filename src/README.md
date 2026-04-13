@@ -55,11 +55,11 @@ Comparaison de tous les modèles (graphiques + tableau synthèse)
 ## Étape 4 — Modélisation : Tâche 2 — Classification glycémique
 
 L'objectif est de prédire l'état glycémique postprandial en 4 classes :
-Classe   Seuil (mg/dL)   Signification clinique
-hypo       < 70          Hypoglycémie
-normal     70 – 140      Normoglycémie postprandiale
-hyper_mild   140 – 180   Hyperglycémie légère
-hyper_severe  > 180      Hyperglycémie sévère
+|Classe  | Seuil (mg/dL) |  Signification clinique
+hypo   |    < 70     |     Hypoglycémie
+normal  |   70 – 140   |   Normoglycémie postprandiale
+hyper_mild  | 140 – 180 |  Hyperglycémie légère
+hyper_severe | > 180   |   Hyperglycémie sévère
 
 Métriques d'évaluation : Accuracy, Recall macro, F1-score macro
 Note clinique : le Recall est la métrique prioritaire — un faux négatif sur hypo (hypoglycémie manquée) est cliniquement plus grave qu'un faux positif.
