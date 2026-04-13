@@ -1,0 +1,4 @@
+model,task,horizon,accuracy_mean,accuracy_std,recall_mean,recall_std,f1_mean,f1_std,n_features,class_weight
+DecisionTree,classification,t+30 min,0.678,0.052,0.672,0.063,0.579,0.081,24,balanced
+DecisionTree,classification,t+60 min,0.532,0.057,0.523,0.064,0.443,0.066,24,balanced
+DecisionTree,classification,t+90 min,0.568,0.054,0.564,0.087,0.464,0.064,24,balanced
