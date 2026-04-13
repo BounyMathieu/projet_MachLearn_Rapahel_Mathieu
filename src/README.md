@@ -37,19 +37,19 @@ Référence clinique : RMSE < 15 mg/dL (norme ISO 15197 pour les systèmes CGM)
 Validation : GroupKFold k=5, split strictement par patient
 
 Modèles linéaires : OLS (baseline), Ridge, Lasso, pipeline Lasso→Random Forest
-# src/task1_linear_models.py
+### src/task1_linear_models.py
 
 Baseline Ridge seule (pour compatibilité avec le fichier de comparaison)
-# python src/baseline_linear_regression.py
+### python src/baseline_linear_regression.py
 
 Arbre de décision
-# python src/task1_decision_tree.py
+### python src/task1_decision_tree.py
 
 Random Forest
-# python src/task1_random_forest.py
+### python src/task1_random_forest.py
 
 Comparaison de tous les modèles (graphiques + tableau synthèse)
-# python src/compare_task1_regression.py
+### python src/compare_task1_regression.py
 
 
 ## Étape 4 — Modélisation : Tâche 2 — Classification glycémique
@@ -65,15 +65,15 @@ Métriques d'évaluation : Accuracy, Recall macro, F1-score macro
 Note clinique : le Recall est la métrique prioritaire — un faux négatif sur hypo (hypoglycémie manquée) est cliniquement plus grave qu'un faux positif.
 
 Régression logistique (baseline classification)
-# python src/task2_logistic_regression.py
+### python src/task2_logistic_regression.py
 
 Arbre de décision + Random Forest
-# python src/task2_trees_classification.py
+### python src/task2_trees_classification.py
 
 Comparaison de tous les modèles (graphiques + heatmap F1)
-# python src/compare_task2_classification.py
+### python src/compare_task2_classification.py
 
-### Choix méthodologiques clés
+# Choix méthodologiques clés
 ## Capteur CGM retenu : Abbott FreeStyle Libre
 Le dataset contient deux capteurs CGM (Abbott FreeStyle Libre et Dexcom G6). Seul l'Abbott est présent chez tous les patients — c'est donc lui qui sert de signal principal. Des écarts systématiques entre les deux capteurs ont été observés selon le statut métabolique, ce qui rendait leur combinaison risquée sans calibration inter-capteurs.
 ## Split train/test par patient — anti-data leakage
