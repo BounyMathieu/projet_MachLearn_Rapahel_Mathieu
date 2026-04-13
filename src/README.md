@@ -55,8 +55,8 @@ Comparaison de tous les modèles (graphiques + tableau synthèse)
 ## Étape 4 — Modélisation : Tâche 2 — Classification glycémique
 
 L'objectif est de prédire l'état glycémique postprandial en 4 classes :
-| ... | ... | ... | 
 |Classe  | Seuil (mg/dL) |  Signification clinique
+| :.. | :.. | :.. | 
 hypo   |    < 70     |     Hypoglycémie
 normal  |   70 – 140   |   Normoglycémie postprandiale
 hyper_mild  | 140 – 180 |  Hyperglycémie légère
