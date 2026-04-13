@@ -1,5 +1,6 @@
-Ordre d'éxécution des codes src : 
-Étape 1 — Préparation des données patients
+# Ordre d'éxécution des codes src : 
+
+## Étape 1 — Préparation des données patients
 python src/build_patient_table.py
 Ce script lit data/raw/cgmacros/bio.csv et ajoute une colonne group classifiant chaque patient selon son taux d'HbA1c :
 
