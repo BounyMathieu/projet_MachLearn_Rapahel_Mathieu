@@ -38,9 +38,9 @@ warnings.filterwarnings("ignore")
 # Configuration
 CONFIG = {
     "dataset_path": "data/processed/meal_windows_dataset.csv",
-    "output_dir":    "data/results/baseline_linear",
-    "random_state":  42,
-    "n_folds":       5,
+    "output_dir"   "data/results/baseline_linear",
+    "random_state":42,
+    "n_folds": 5,
 
     #Prédiction de cgm_target_t60, cgm_target_t30 et cgm_target_t90
     "targets": {
@@ -115,8 +115,7 @@ def build_feature_matrix(df: pd.DataFrame, use_sequence: bool = False) -> pd.Dat
             reverse=True,   # cgm_t-60 en premier (le plus ancien)
         )
         # Retirer les agrégats CGM et ajouter la séquence brute
-        cgm_agg_cols = ["cgm_at_meal", "cgm_pre_mean", "cgm_pre_std",
-                        "cgm_pre_min", "cgm_pre_max", "cgm_slope_15", "cgm_slope_30"]
+        cgm_agg_cols = ["cgm_at_meal", "cgm_pre_mean", "cgm_pre_std", "cgm_pre_min", "cgm_pre_max", "cgm_slope_15", "cgm_slope_30"]
         X = X.drop(columns=[c for c in cgm_agg_cols if c in X.columns])
         X = pd.concat([X, df[seq_cols]], axis=1)
  
@@ -155,8 +154,8 @@ def evaluate_model(X: pd.DataFrame, y: pd.Series, groups: pd.Series, model_name:
  
         # Métriques
         rmse = np.sqrt(mean_squared_error(y_test, y_pred))
-        mae  = mean_absolute_error(y_test, y_pred)
-        r2   = r2_score(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2= r2_score(y_test, y_pred)
  
         rmse_scores.append(rmse)
         mae_scores.append(mae)
@@ -165,27 +164,27 @@ def evaluate_model(X: pd.DataFrame, y: pd.Series, groups: pd.Series, model_name:
         # Patients en test dans ce fold
         test_patients = groups.iloc[test_idx].unique().tolist()
         fold_details.append({
-            "fold":     fold_idx + 1,
-            "n_train":  len(train_idx),
-            "n_test":   len(test_idx),
-            "patients_test": test_patients,
-            "rmse":     round(rmse, 2),
-            "mae":      round(mae, 2),
-            "r2":       round(r2, 3),
+            "fold": fold_idx + 1,
+            "n_train": len(train_idx),
+            "n_test": len(test_idx),
+            "patients_test":test_patients,
+            "rmse": round(rmse, 2),
+            "mae": round(mae, 2),
+            "r2": round(r2, 3),
         })
  
     results = {
-        "model_name":    model_name,
-        "n_features":    X.shape[1],
-        "rmse_mean":     round(np.mean(rmse_scores), 2),
-        "rmse_std":      round(np.std(rmse_scores), 2),
-        "mae_mean":      round(np.mean(mae_scores), 2),
-        "mae_std":       round(np.std(mae_scores), 2),
-        "r2_mean":       round(np.mean(r2_scores), 3),
-        "r2_std":        round(np.std(r2_scores), 3),
-        "fold_details":  fold_details,
-        "pipeline":      pipeline,   # Pipeline entraîné sur le dernier fold (pour analyse)
-        "X_columns":     X.columns.tolist(),
+        "model_name":model_name,
+        "n_features": X.shape[1],
+        "rmse_mean":round(np.mean(rmse_scores), 2),
+        "rmse_std":round(np.std(rmse_scores), 2),
+        "mae_mean":  round(np.mean(mae_scores), 2),
+        "mae_std":round(np.std(mae_scores), 2),
+        "r2_mean":round(np.mean(r2_scores), 3),
+        "r2_std": round(np.std(r2_scores), 3),
+        "fold_details":fold_details,
+        "pipeline": pipeline,   # Pipeline entraîné sur le dernier fold (pour analyse)
+        "X_columns":X.columns.tolist(),
     }
  
     return results
@@ -201,9 +200,9 @@ def get_feature_importance(pipeline: Pipeline, feature_names: list) -> pd.DataFr
     """
     coefs = pipeline.named_steps["model"].coef_
     importance = pd.DataFrame({
-        "feature":     feature_names,
+        "feature":feature_names,
         "coefficient": coefs,
-        "abs_coef":    np.abs(coefs),
+        "abs_coef":np.abs(coefs),
     }).sort_values("abs_coef", ascending=False).reset_index(drop=True)
  
     return importance
@@ -250,9 +249,9 @@ def plot_predictions_vs_actual(
  
     #Seuils cliniques horizontaux
     for seuil, label, color in [
-        (70,  "Hypo < 70",    "#E24B4A"),
+        (70,  "Hypo < 70", "#E24B4A"),
         (140, "Normal < 140", "#EF9F27"),
-        (180, "Hyper > 180",  "#E24B4A"),
+        (180, "Hyper > 180","#E24B4A"),
     ]:
         ax.axhline(seuil, color=color, linestyle=":", linewidth=0.8, alpha=0.7)
         ax.text(lims[0] + 1, seuil + 1, label, fontsize=8, color=color)
@@ -279,9 +278,7 @@ def plot_feature_importance(importance_df: pd.DataFrame, title: str, output_path
     Barplot horizontal des coefficients Ridge (top N features).
     """
     top = importance_df.head(top_n).copy()
- 
     colors = ["#1D9E75" if c >= 0 else "#E24B4A" for c in top["coefficient"]]
- 
     fig, ax = plt.subplots(figsize=(8, top_n * 0.35 + 1))
     bars = ax.barh(top["feature"][::-1], top["coefficient"][::-1], color=colors[::-1])
     ax.axvline(0, color="black", linewidth=0.8)
@@ -293,6 +290,7 @@ def plot_feature_importance(importance_df: pd.DataFrame, title: str, output_path
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"  → Graphique sauvegardé : {output_path}")
+    
 def plot_rmse_comparison(results_a: dict, results_b: dict, output_path: str):
     """
     Barplot comparant RMSE Config A vs Config B sur les 3 horizons.
@@ -300,20 +298,17 @@ def plot_rmse_comparison(results_a: dict, results_b: dict, output_path: str):
     horizons = ["t+30", "t+60", "t+90"]
     rmse_a = [results_a[h]["rmse_mean"] for h in ["t30", "t60", "t90"]]
     rmse_b = [results_b[h]["rmse_mean"] for h in ["t30", "t60", "t90"]]
-    std_a  = [results_a[h]["rmse_std"]  for h in ["t30", "t60", "t90"]]
-    std_b  = [results_b[h]["rmse_std"]  for h in ["t30", "t60", "t90"]]
+    std_a = [results_a[h]["rmse_std"]  for h in ["t30", "t60", "t90"]]
+    std_b = [results_b[h]["rmse_std"]  for h in ["t30", "t60", "t90"]]
  
     x = np.arange(len(horizons))
     width = 0.35
  
     fig, ax = plt.subplots(figsize=(7, 4))
-    ax.bar(x - width/2, rmse_a, width, yerr=std_a, label="Config A — agrégats",
-           color="#1D9E75", capsize=4, alpha=0.85)
-    ax.bar(x + width/2, rmse_b, width, yerr=std_b, label="Config B — séquence brute",
-           color="#3B8BD4", capsize=4, alpha=0.85)
+    ax.bar(x - width/2, rmse_a, width, yerr=std_a, label="Config A — agrégats", color="#1D9E75", capsize=4, alpha=0.85)
+    ax.bar(x + width/2, rmse_b, width, yerr=std_b, label="Config B — séquence brute", color="#3B8BD4", capsize=4, alpha=0.85)
  
-    ax.axhline(CONFIG["clinical_rmse_threshold"], color="#E24B4A",
-               linestyle="--", linewidth=1, label=f"Seuil clinique {CONFIG['clinical_rmse_threshold']} mg/dL")
+    ax.axhline(CONFIG["clinical_rmse_threshold"], color="#E24B4A", linestyle="--", linewidth=1, label=f"Seuil clinique {CONFIG['clinical_rmse_threshold']} mg/dL")
  
     ax.set_xticks(x)
     ax.set_xticklabels(horizons)
@@ -321,7 +316,7 @@ def plot_rmse_comparison(results_a: dict, results_b: dict, output_path: str):
     ax.set_title("Comparaison Config A vs Config B\nRégression linéaire (Ridge) — GroupKFold k=5", fontsize=10)
     ax.legend(fontsize=9)
     ax.set_ylim(0, max(max(rmse_a), max(rmse_b)) * 1.4)
- 
+
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
@@ -338,12 +333,10 @@ def run_baseline(dataset_path: str, output_dir: str):
     """
     os.makedirs(output_dir, exist_ok=True)
  
-    print("=" * 60)
-    print("  BASELINE — Régression Linéaire (Ridge)")
-    print("  Projet CGMacros — Palliere / Bouny")
-    print("=" * 60)
+
+    print(" BASELINE — Régression Linéaire (Ridge)")
  
-    # --- Chargement ---
+    # Chargement
     print(f"\n[1/4] Chargement du dataset : {dataset_path}")
     if not os.path.exists(dataset_path):
         raise FileNotFoundError(
@@ -352,8 +345,8 @@ def run_baseline(dataset_path: str, output_dir: str):
         )
  
     df = pd.read_csv(dataset_path)
-    print(f"  → {len(df)} fenêtres repas | {df['patient_id'].nunique()} patients")
-    print(f"  → Colonnes disponibles : {len(df.columns)}")
+    print(f"  -> {len(df)} fenêtres repas | {df['patient_id'].nunique()} patients")
+    print(f" -> Colonnes disponibles : {len(df.columns)}")
  
     # Vérifier que les cibles sont présentes
     for tgt in CONFIG["targets"].values():
@@ -362,12 +355,12 @@ def run_baseline(dataset_path: str, output_dir: str):
  
     groups = df["patient_id"]
  
-    # --- Construction des matrices de features ---
+    # Construction des matrices de features 
     print("\n[2/4] Construction des matrices de features...")
     X_agg = build_feature_matrix(df, use_sequence=False)
     X_seq = build_feature_matrix(df, use_sequence=True)
-    print(f"  Config A (agrégats)      : {X_agg.shape[1]} features")
-    print(f"  Config B (séquence brute): {X_seq.shape[1]} features")
+    print(f" Config A (agrégats) : {X_agg.shape[1]} features")
+    print(f" Config B (séquence brute): {X_seq.shape[1]} features")
  
     #Évaluation par validation croisée à 5 folds par patient
     print("\n[3/4] Évaluation par GroupKFold (k=5, split par patient)...")
@@ -379,9 +372,9 @@ def run_baseline(dataset_path: str, output_dir: str):
  
         # Supprimer les lignes où la cible est manquante
         valid_mask = y.notna()
-        y_clean      = y[valid_mask]
-        X_agg_clean  = X_agg[valid_mask]
-        X_seq_clean  = X_seq[valid_mask]
+        y_clean = y[valid_mask]
+        X_agg_clean = X_agg[valid_mask]
+        X_seq_clean = X_seq[valid_mask]
         groups_clean = groups[valid_mask]
  
         print(f"\n  Horizon {horizon_key} ({target_col}) — {valid_mask.sum()} fenêtres valides")
@@ -392,7 +385,7 @@ def run_baseline(dataset_path: str, output_dir: str):
             model_name=f"Ridge_ConfigA_{horizon_key}",
         )
         results_a[horizon_key] = res_a
-        print(f"    Config A → RMSE {res_a['rmse_mean']} ± {res_a['rmse_std']} mg/dL | "
+        print(f" Config A → RMSE {res_a['rmse_mean']} ± {res_a['rmse_std']} mg/dL | "
               f"MAE {res_a['mae_mean']} ± {res_a['mae_std']} mg/dL | "
               f"R² {res_a['r2_mean']} ± {res_a['r2_std']}")
  
@@ -402,7 +395,7 @@ def run_baseline(dataset_path: str, output_dir: str):
             model_name=f"Ridge_ConfigB_{horizon_key}",
         )
         results_b[horizon_key] = res_b
-        print(f"    Config B → RMSE {res_b['rmse_mean']} ± {res_b['rmse_std']} mg/dL | "
+        print(f" Config B → RMSE {res_b['rmse_mean']} ± {res_b['rmse_std']} mg/dL | "
               f"MAE {res_b['mae_mean']} ± {res_b['mae_std']} mg/dL | "
               f"R² {res_b['r2_mean']} ± {res_b['r2_std']}")
         
@@ -462,9 +455,7 @@ def run_baseline(dataset_path: str, output_dir: str):
     results_df.to_csv(results_path, index=False)
  
     #Résumé final
-    print("\n" + "=" * 60)
-    print("  RÉSULTATS BASELINE")
-    print("=" * 60)
+    print("RÉSULTATS BASELINE")
     print(results_df.to_string(index=False))
  
     #Interprétation clinique automatique
@@ -473,18 +464,15 @@ def run_baseline(dataset_path: str, output_dir: str):
     print(f"\n  Horizon principal t+60 min (Config A) :")
     print(f"  RMSE = {rmse_main} mg/dL (seuil clinique ISO 15197 = {threshold} mg/dL)")
     if rmse_main <= threshold:
-        print(f"  ✅ Performance dans le seuil clinique acceptable")
+        print(f"✅ Performance dans le seuil clinique acceptable")
     else:
-        print(f"  ⚠️  Performance au-dessus du seuil clinique — à améliorer avec les modèles suivants")
- 
-    print(f"\n  Fichiers sauvegardés dans : {output_dir}/")
+        print(f"⚠️  Performance au-dessus du seuil clinique — à améliorer avec les modèles suivants")
     return results_a, results_b, importance_a
  
  
 
 
 # POINT D'ENTRÉE
- 
 if __name__ == "__main__":
     results_a, results_b, importance = run_baseline(
         dataset_path=CONFIG["dataset_path"],
