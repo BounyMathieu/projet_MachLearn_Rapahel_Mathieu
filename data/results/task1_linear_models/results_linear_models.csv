@@ -1,0 +1,13 @@
+model,task,horizon,rmse_mean,rmse_std,mae_mean,mae_std,r2_mean,r2_std,n_features,clinical_ok
+OLS,regression,t+30 min,15.14,0.6,11.91,0.77,0.824,0.057,24,False
+Ridge,regression,t+30 min,15.27,0.67,12.03,0.81,0.822,0.056,24,False
+Lasso,regression,t+30 min,15.21,0.7,11.99,0.8,0.823,0.056,24,False
+Lasso→RF,regression,t+30 min,19.17,1.29,14.6,1.33,0.727,0.071,24,False
+OLS,regression,t+60 min,31.12,1.82,23.92,1.69,0.51,0.178,24,False
+Ridge,regression,t+60 min,31.21,1.8,24.06,1.69,0.507,0.18,24,False
+Lasso,regression,t+60 min,31.3,1.89,23.95,1.69,0.501,0.19,24,False
+Lasso→RF,regression,t+60 min,32.01,2.47,24.18,2.21,0.5,0.136,24,False
+OLS,regression,t+90 min,33.42,1.9,25.41,1.46,0.474,0.134,24,False
+Ridge,regression,t+90 min,33.46,1.86,25.48,1.41,0.472,0.137,24,False
+Lasso,regression,t+90 min,33.11,2.09,24.98,1.53,0.48,0.142,24,False
+Lasso→RF,regression,t+90 min,31.94,3.41,23.59,1.94,0.53,0.092,24,False
