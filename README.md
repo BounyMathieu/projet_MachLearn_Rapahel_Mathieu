@@ -89,6 +89,8 @@ Pour la régression, nous utilisons les métriques classiques : RMSE, MAE et R²
 
 ├── README.md
 │
+├── WebSite - README.html        # Site web en local, afin de mieux visualiser le README.md
+│
 ├── requirements.txt
 │
 ├── .gitignore
@@ -105,31 +107,30 @@ Pour la régression, nous utilisons les métriques classiques : RMSE, MAE et R²
 │ │
 │ ├── results
 │ │ └── baseline_linear
-│ │ │ └── baseline_results.csv
-│ │ │ └── coefficients_configA_t60.csv
-│ │ │ └── coefficients_configA_t60.png
-│ │ │ └── rmse_comparaison_A_vs_B.png
-│ │ │ └── scatter_configA_t60.png
+│ │ │ └── baseline_linear
+│ │ │ └── baseline_linear_evaluationAndB
+│ │ │ └── comparison_task1_regression
+│ │ │ └── comparison_task2_classification
+│ │ │ └── task1_decision_tree
+│ │ │ └── task1_linear_models
+│ │ │ └── task1_random_forest
+│ │ │ └── task2_decision_tree
+│ │ │ └── task2_logistic_regression
+│ │ │ └── task2_random_forest
 │
 ├── notebooks/
-│ ├── 01_EDA.ipynb        # Analyse exploratoire
-│ ├── 02_preprocessing.ipynb
-│ └── 03_modelling.ipynb
+│ ├── README.md
 │
 ├── src/
 │ ├── Analyse exploratoire
-│ │ └── graphes_repartitions.ipynb
+│ ├── Codes PYTHON
 │ │ 
 │ ├── build_patient_table.py
 │ ├── column_description_meal_window.py
 │ └── meal_windows_builder.py
 │
-├── dashboard/
-│ └── app.py        # Streamlit
-│ └── report/
-│
 ├── rapport.pdf
-│ └── figures/
+│ └── PALLIERE_BOUNY_RAPPORT.pdf
 
 ```
 
