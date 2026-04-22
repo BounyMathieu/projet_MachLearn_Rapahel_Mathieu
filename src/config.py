@@ -84,23 +84,30 @@ def load_dataset(path: str) -> pd.DataFrame:
 
 
 def build_X(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Construit la matrice de features X (Config A).
-    Encode meal_type en one-hot.
-    Retourne un DataFrame avec toutes les features numériques.
-    Problème : la variable meal_type créé des colonnes supplémentaires (meal_breakfast, meal_lunch, meal_dinner, meal_snacks) qui ne sont pas présentes dans le dataset de test.
-    Solution : on s'assure que les colonnes dummies sont créées même si la
-    """
+    # Travailler sur une copie pour ne pas muter le DataFrame original
+    df = df.copy()
+
+    # Normalisation de meal_type AVANT tout encodage
+    df[CATEGORICAL_FEATURE] = (
+        df[CATEGORICAL_FEATURE]
+        .str.strip()
+        .str.lower()
+        .replace({
+            "snack 1": "snacks",
+            "snack":   "snacks",
+            "snacks":  "snacks",   # idempotent, sécurité
+        })
+    )
+
+    # Construction de X à partir des features agrégées disponibles
     available = [c for c in FEATURES_AGG if c in df.columns]
     X = df[available].copy()
-    df[CATEGORICAL_FEATURE] = df[CATEGORICAL_FEATURE].str.strip().str.lower()
-    df[CATEGORICAL_FEATURE] = df[CATEGORICAL_FEATURE].replace({
-    "snack 1": "snacks", "snacks": "snacks", "snack": "snacks"
-    })
- 
+
+    # One-hot encoding de meal_type sur données déjà normalisées
     if CATEGORICAL_FEATURE in df.columns:
         dummies = pd.get_dummies(df[CATEGORICAL_FEATURE], prefix="meal", drop_first=False)
         X = pd.concat([X.reset_index(drop=True), dummies.reset_index(drop=True)], axis=1)
+
     return X
 
 
