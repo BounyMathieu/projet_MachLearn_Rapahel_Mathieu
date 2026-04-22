@@ -157,7 +157,7 @@ def plot_recall_focus(df: pd.DataFrame, output_path: str):
     ax.axhline(0.8, color="gray", linestyle=":", linewidth=0.9, alpha=0.7, label="Référence 0.80")
     ax.set_ylim(0, 1.15)
     ax.set_ylabel("Recall macro", fontsize=11)
-    ax.set_title("Recall macro à t+60 min — Focus clinique\n" "(rappel : un faux négatif hypoglycémie est cliniquement critique)", fontsize=10)
+    ax.set_title("Recall macro à t+60 min — Focus clinique\n" "(rappel : un faux négatif hyperglycémie sévère est cliniquement critique)", fontsize=10)
     ax.legend(fontsize=9)
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
@@ -191,7 +191,7 @@ def print_synthesis(df: pd.DataFrame):
         print(f"Meilleur Recall macro à t+60 min : {best_recall}")
  
         print(f"\n  Note clinique :")
-        print(f" Le Recall est la métrique prioritaire pour la détection des hypoglycémies — un faux négatif (hypoglycémie manquée) est plus grave cliniquement qu'un faux positif (fausse alarme). Vérifier le recall par classe dans les rapports détaillés.")
+        print(f" Le Recall est la métrique prioritaire pour la détection des hyperglycémies — " f"un faux négatif (hyperglycémie sévère manquée) est plus grave cliniquement qu'un faux positif " f"(fausse alarme). Vérifier le recall par classe 'hyper_severe' dans les rapports détaillés.")
  
 #Pipeline de comparaison
 def run():
