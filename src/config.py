@@ -65,18 +65,10 @@ REGRESSION_TARGETS = {
 CLASSIFICATION_TARGET= "glycemic_label"
  
 # Ordre des classes (pour les rapports de classification)
-CLASS_ORDER =["hypo", "normal", "hyper_mild", "hyper_severe"]
+CLASS_ORDER = ["normal", "hyper"]
  
 # Seuils cliniques pour labellisation a posteriori (mg/dL)
-THRESHOLDS = {"hypo": 70, "normal": 140, "hyper_mild": 180}
-
-
-#FOnctions partagées 
-def load_dataset(path: str) -> pd.DataFrame:
-    """Charge le dataset et vérifie les colonnes essentielles."""
-    df = pd.read_csv(path)
-    essential = ["patient_id", "glycemic_label", "cgm_target_t30", "cgm_target_t60", "cgm_target_t90"]
-    missing = [c for c in essential if c not in df.columns]
+THRESHOLDS  = {"normal": 140}   # seuil unique : < 140 → normal, ≥ 140 → hyper
 
 
 
@@ -137,16 +129,9 @@ def get_cv_splits(X: pd.DataFrame, y: pd.Series, groups: pd.Series):
  
  
 def label_from_value(v: float) -> str:
-    """Convertit une valeur glycémique (mg/dL) en label clinique."""
     if np.isnan(v):
         return "unknown"
-    if v < THRESHOLDS["hypo"]:
-        return "hypo"
-    if v < THRESHOLDS["normal"]:
-        return "normal"
-    if v < THRESHOLDS["hyper_mild"]:
-        return "hyper_mild"
-    return "hyper_severe"
+    return "normal" if v < THRESHOLDS["normal"] else "hyper"
  
 
 
@@ -156,3 +141,4 @@ def save_results(results: list[dict], output_path: str):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     pd.DataFrame(results).to_csv(output_path, index=False)
     print(f"  → Résultats sauvegardés : {output_path}")
+ 
