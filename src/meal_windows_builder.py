@@ -35,7 +35,7 @@ CONFIG = {
     "output_filename":    "meal_windows_dataset.csv",
  
     # Paramètres de la fenêtre temporelle (en minutes)
-    "pre_meal_window":    60,   # Durée de la séquence CGM avant le repas
+    "pre_meal_window": 60,   # Durée de la séquence CGM avant le repas
     "post_meal_target": 90,   # On extrait jusqu'à t+90 min
     "post_meal_horizons": [30, 60, 90],  # Les 3 horizons de prédiction
  
@@ -46,7 +46,7 @@ CONFIG = {
     "cgm_resolution":     1,
 
     # Numéros de patients valides (24, 25, 37, 40 n'existent pas, numéros jusqu'à 49)
-    "valid_patients": [i for i in range(1, 50) if i not in [24, 25, 37, 40]],
+    "valid_patients": [i for i in range(1, 50) if i not in [12, 24, 25, 37, 40]],
  
     # Seuils cliniques pour la cible (mg/dL) — utilisés pour labellisation a posteriori
     "thresholds": {
@@ -116,7 +116,7 @@ def load_bio(bio_path: str) -> pd.DataFrame:
     available = [c for c in keep if c in bio.columns]
     missing = [c for c in keep if c not in bio.columns]
     if missing:
-        print(f"  ⚠️  Colonnes bio absentes (ignorées) : {missing}")
+        print(f"⚠️  Colonnes bio absentes (ignorées) : {missing}")
  
     bio = bio[available].copy()
     bio = bio.set_index("subject")
@@ -386,9 +386,8 @@ def build_meal_windows_dataset(
         if verbose:
             print(msg)
  
-    log("=" * 60)
+
     log("  PIPELINE — Construction des fenêtres repas (CGMacros)")
-    log("=" * 60)
  
     # 1. Charger les données bio 
     log("\n[1/4] Chargement du profil patients...")
@@ -404,7 +403,7 @@ def build_meal_windows_dataset(
         if os.path.exists(csv_file):
             patient_files.append((pid, csv_file))
         else:
-            print(f"  ⚠️  Fichier manquant : {csv_file}")
+            print(f"⚠️  Fichier manquant : {csv_file}")
     
  
     if not patient_files:
@@ -431,13 +430,13 @@ def build_meal_windows_dataset(
         try:
             df = load_patient_csv(filepath)
         except Exception as e:
-            log(f"    ❌ Erreur chargement : {e}")
+            log(f"❌ Erreur chargement : {e}")
             continue
  
         #Construire la série CGM indexée par timestamp
         cgm_col = _find_column(df, [CONFIG["cgm_column"], "Libre", "Abbott"])
         if cgm_col is None:
-            log(f"    ⚠️  Colonne CGM '{CONFIG['cgm_column']}' non trouvée — patient ignoré")
+            log(f"⚠️  Colonne CGM '{CONFIG['cgm_column']}' non trouvée — patient ignoré")
             stats["skipped_no_cgm"] += 1
             continue
  
@@ -447,15 +446,15 @@ def build_meal_windows_dataset(
         #Détecter les repas
         meals = detect_meals(df)
         if meals.empty:
-            log(f"    ⚠️  Aucun repas détecté")
+            log(f"⚠️  Aucun repas détecté")
             continue
  
-        log(f"    {len(meals)} repas détectés")
+        log(f" {len(meals)} repas détectés")
         stats["total_meals"] += len(meals)
  
         # Données bio du patient
         if patient_id not in bio.index:
-            log(f"    ⚠️  Patient {patient_id} absent de bio_with_group.csv — ignoré")
+            log(f"⚠️  Patient {patient_id} absent de bio_with_group.csv — ignoré")
             continue
         patient_bio = bio.loc[patient_id].to_dict()
  
@@ -533,9 +532,7 @@ def build_meal_windows_dataset(
     dataset.to_csv(output_path, index=False)
  
     # --- Rapport final ---
-    log("\n" + "=" * 60)
     log("  RÉSUMÉ")
-    log("=" * 60)
     log(f"  Repas détectés total    : {stats['total_meals']}")
     log(f"  Fenêtres valides        : {stats['valid_windows']}")
     log(f"  Ignorées (pas de CGM)   : {stats['skipped_no_cgm']} patients")
