@@ -42,6 +42,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
  
+from scipy import stats #biblio calcul scientifique basé sur NumPy.
 from sklearn.linear_model import LinearRegression, Ridge, LassoCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
@@ -200,6 +201,62 @@ def get_lasso_selected_features(pipeline: Pipeline, feature_names: list) -> list
         print(f"  {f}")
     return selected
 
+def plot_residuals_diagnostics(y_test: np.ndarray, y_pred: np.ndarray, horizon_label: str, output_path: str):
+    """
+    Diagnostics des résidus OLS sur le dernier fold :
+    - Résidus vs valeurs prédites (homoscédasticité)
+    - QQ-plot (normalité)
+    - Test de Shapiro-Wilk (normalité formelle)
+
+    POURQUOI CES TESTS ?
+    La régression linéaire suppose :
+    1. Homoscédasticité : la variance des résidus est constante quelle que
+       soit la valeur prédite. Un entonnoir dans le plot résidus/prédits
+       révèle une hétéroscédasticité → les IC et p-values sont invalides.
+    2. Normalité des résidus : nécessaire pour que les tests t sur les
+       coefficients soient valides. Shapiro-Wilk teste H0 = normalité.
+       Si p < 0.05, on rejette la normalité.
+    """
+    residuals = y_test - y_pred
+
+    # Test de Shapiro-Wilk (limité à 5000 points max par contrainte scipy)
+    n = len(residuals)
+    sample = residuals if n <= 5000 else np.random.choice(residuals, 5000, replace=False)
+    stat, p_value = stats.shapiro(sample)
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    # Plot 1 : Résidus vs Prédits (homoscédasticité) ---
+    ax1 = axes[0]
+    ax1.scatter(y_pred, residuals, alpha=0.45, color="#3B8BD4", s=25)
+    ax1.axhline(0, color="black", linewidth=1, linestyle="--")
+    ax1.axhline( 15, color="#EF9F27", linewidth=0.8, linestyle=":", alpha=0.7)
+    ax1.axhline(-15, color="#EF9F27", linewidth=0.8, linestyle=":", alpha=0.7, label="±15 mg/dL (seuil ISO)")
+    ax1.set_xlabel("Valeurs prédites (mg/dL)", fontsize=10)
+    ax1.set_ylabel("Résidus (réel − prédit, mg/dL)", fontsize=10)
+    ax1.set_title(f"Résidus vs Prédits — OLS {horizon_label}\n" f"(homoscédasticité : pas d'entonnoir attendu)", fontsize=10)
+    ax1.legend(fontsize=8)
+
+    # Plot 2 : QQ-plot (normalité) 
+    ax2 = axes[1]
+    (osm, osr), (slope, intercept, r) = stats.probplot(residuals, dist="norm")
+    ax2.plot(osm, osr, "o", alpha=0.45, color="#3B8BD4", markersize=3)
+    ax2.plot(osm, slope * np.array(osm) + intercept, color="#E24B4A", linewidth=1.5, label="Droite théorique normale")
+    ax2.set_xlabel("Quantiles théoriques", fontsize=10)
+    ax2.set_ylabel("Quantiles observés", fontsize=10)
+    shapiro_label = (f"Shapiro-Wilk : W={stat:.4f}, p={p_value:.4f}\n" f"{'✅ Normalité non rejetée (p≥0.05)' if p_value >= 0.05 else '⚠️  Normalité rejetée (p<0.05)'}")
+    ax2.set_title(f"QQ-plot des résidus — OLS {horizon_label}\n{shapiro_label}", fontsize=10)
+    ax2.legend(fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f" -> Diagnostics résidus : {output_path}")
+    print(f" Shapiro-Wilk W={stat:.4f} | p={p_value:.4f} | n={n}")
+    if p_value < 0.05:
+        print(f"⚠️  Normalité des résidus rejetée : Il faut donc interpréter les IC avec prudence")
+    else:
+        print(f"✅ Normalité des résidus non rejetée")
 
 
 # Extraction des coefficients pour les 3 modèles linéaires et comparaison graphique
@@ -496,6 +553,12 @@ def run():
                 f"OLS (baseline) — {horizon_label}", "#888780",
                 os.path.join(OUTPUT_DIR, f"scatter_OLS_{horizon_key}.png"),
             )
+
+
+            # Diagnostics résidus OLS (Shapiro-Wilk + QQ-plot)
+            plot_residuals_diagnostics(
+                res_ols["y_test"], res_ols["y_pred"], horizon_label, output_path=os.path.join(OUTPUT_DIR, f"residuals_OLS_{horizon_key}.png"),
+)
  
 
 # 2. Ridge
