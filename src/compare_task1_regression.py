@@ -29,10 +29,27 @@ OUTPUT_DIR = os.path.join(RESULTS_DIR, "comparison_task1_regression")
  
 # Fichiers CSV de résultats à agréger
 RESULT_FILES = {
-    "Ridge (baseline)": os.path.join(RESULTS_DIR, "baseline_linear", "baseline_results.csv"),
+    "Ridge (baseline)": os.path.join(RESULTS_DIR, "baseline_linear",    "baseline_results.csv"),
+    "OLS":              os.path.join(RESULTS_DIR, "task1_linear_models", "results_linear_models.csv"),
+    "Ridge":            os.path.join(RESULTS_DIR, "task1_linear_models", "results_linear_models.csv"),
+    "Lasso":            os.path.join(RESULTS_DIR, "task1_linear_models", "results_linear_models.csv"),
+    "Lasso -> RF":      os.path.join(RESULTS_DIR, "task1_linear_models", "results_linear_models.csv"),
     "DecisionTree":     os.path.join(RESULTS_DIR, "task1_decision_tree", "results_decision_tree_regression.csv"),
     "RandomForest":     os.path.join(RESULTS_DIR, "task1_random_forest", "results_random_forest_regression.csv"),
 }
+
+COLORS = {
+    "Ridge (baseline)": "#888780",
+    "OLS":              "#C0C0C0",
+    "Ridge":            "#3B8BD4",
+    "Lasso":            "#EF9F27",
+    "Lasso -> RF":      "#BA7517",
+    "DecisionTree":     "#9B59B6",
+    "RandomForest":     "#1D9E75",
+}
+#task1_linear_models.py stocke les 4 modèles dans un seul fichier results_linear_models.csv,
+# avec une colonne model qui vaut "OLS", "Ridge", "Lasso" ou "Lasso -> RF". La fonction load_all_results dans compare_task1_regression.py
+# filtre déjà par model_label quand elle construit les graphiques — donc chaque modèle sera bien isolé à l'affichage.
  
 HORIZONS = ["t+30 min", "t+60 min", "t+90 min"]
 COLORS = {"Ridge (baseline)": "#888780", "DecisionTree": "#3B8BD4", "RandomForest": "#1D9E75"}
@@ -41,10 +58,12 @@ COLORS = {"Ridge (baseline)": "#888780", "DecisionTree": "#3B8BD4", "RandomFores
 
 #Fonction d'agrégation des résultats CSV de chaque modèle
 def load_all_results() -> pd.DataFrame:
-    """Charge et concatène tous les CSV de résultats disponibles."""
     frames = []
     for model_name, path in RESULT_FILES.items():
         df = pd.read_csv(path)
+        # Filtrer uniquement la ligne correspondant à ce modèle
+        if "model" in df.columns:
+            df = df[df["model"] == model_name].copy()
         df["model_label"] = model_name
         frames.append(df)
  
@@ -53,7 +72,6 @@ def load_all_results() -> pd.DataFrame:
     # Normaliser le nom de la colonne horizon
     if "horizon" not in combined.columns and "Horizon" in combined.columns:
         combined = combined.rename(columns={"Horizon": "horizon"})
- 
     return combined
  
 
