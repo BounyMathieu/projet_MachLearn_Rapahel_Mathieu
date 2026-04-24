@@ -1,151 +1,327 @@
 """
-config.py
+task2_logistic_regression.py
 
-Configuration partagée entre tous les scripts de modélisation.
-Importer ce fichier dans chaque script modèle et comparaison.
- 
-Auteurs : Palliere Raphael — E4 Bio
+Classification : prédire l'état glycémique postprandial
+
+Modèle    : Régression Logistique multiclasse (baseline classification)
+
+La régression logistique est la baseline naturelle pour la classification, comme la régression linéaire l'était pour la régression continue.
+Elle suppose une séparation linéaire des classes dans l'espace des features, hypothèse forte mais qui fixe un plancher de performance interprétable.
+
+Nous utilisons class_weight='balanced' pour corriger le biais du déséquilibre des classes à l'entraînement. (cas normaux plus fréquents que les hypoglycémies sévères)
+Validation par GroupKFold k=5 strictement par patient (pas de data leakage)
+
+Auteurs : Palliere Raphael & Bouny Mathieu — E4 Bio
 """
 
+
+
+import os
+import warnings
 import numpy as np
 import pandas as pd
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import GroupKFold
-
-# Chemins 
-DATASET_PATH = "data/processed/meal_windows_dataset.csv"
-RESULTS_DIR  = "data/results"
-
-# Configuration des cibles et des features
-N_FOLDS = 5
-RANDOM_STATE = 42
-CLINICAL_RMSE_THRESHOLD = 15.0 #Seuil clinique ISO15197 (mg/dL)
-
-#Features de la config A : celle que l'on conserve 
-FEATURES_AGG = [
-    # CGM pré-repas — statistiques résumées
-    "cgm_at_meal",
-    "cgm_pre_mean",
-    "cgm_pre_std",
-    "cgm_pre_min",
-    "cgm_pre_max",
-    "cgm_slope_15",
-    "cgm_slope_30",
-    # Nutrition
-    "carbs",
-    "protein",
-    "fat",
-    "fiber",
-    # Encodage temporel cyclique
-    "hour_sin",
-    "hour_cos",
-    # Biomarqueurs cliniques
-    "bio_A1c PDL (Lab)",
-    "bio_Fasting GLU - PDL (Lab)",
-    "bio_Insulin",
-    "bio_BMI",
-    "bio_Age",
-    "bio_group_encoded",
-    "bio_gender_encoded",
-]
-
-# Variables catégorielles 
-CATEGORICAL_FEATURE = "meal_type"
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+ 
+from sklearn.metrics import roc_curve, auc 
+from sklearn.preprocessing import label_binarize
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import (
+    accuracy_score, recall_score, f1_score,
+    classification_report, confusion_matrix, ConfusionMatrixDisplay,
+)
+ 
+from config import (
+    DATASET_PATH, RESULTS_DIR, RANDOM_STATE, N_FOLDS,
+    CLASSIFICATION_TARGET, CLASS_ORDER,
+    load_dataset, build_X, get_preprocessing, get_cv_splits, save_results,
+)
+ 
+warnings.filterwarnings("ignore")
+ 
+OUTPUT_DIR = os.path.join(RESULTS_DIR, "task2_logistic_regression")
+MODEL_NAME = "LogisticRegression"
 
 
-#Etape 1 : Régression continue 
-REGRESSION_TARGETS = {
+#Hyperparamètres de la régression logistique;
+LR_PARAMS = {
+    "C":           1.0, #Inverse de la force de régularisation (1.0 = standard)
+    "max_iter": 1000, #Nombre maximal d'itérations pour la convergence
+    "class_weight": "balanced", #Correction du déséquilibre des classes
+    "solver": "lbfgs", #Algorithme d'optimisation efficace pour les petits datasets
+    "random_state": RANDOM_STATE,
+}
+
+# Horizon d'évaluation : t+60 min (horizon principal pour la classification)
+HORIZON_TARGETS = {
     "t30": "cgm_target_t30",
-    "t60": "cgm_target_t60",   # Horizon principal
+    "t60": "cgm_target_t60",
     "t90": "cgm_target_t90",
 }
+
+
+
+# COnstruction des labels par horizon 
+def build_labels(df: pd.DataFrame, target_col: str) -> pd.Series:
+    """
+    Reconstruit les labels de classification depuis la valeur continue.
+    Utilise les seuils cliniques définis dans config.py.
+    """
+    from config import label_from_value
+    return df[target_col].apply(label_from_value)
  
-# Tâche 2 — Classification
-CLASSIFICATION_TARGET= "glycemic_label"
+
+
+#Evaluation par FOld 
+def evaluate_fold(pipeline, X_train, y_train, X_test, y_test) -> dict:
+    pipeline.fit(X_train, y_train)
+    y_pred = pipeline.predict(X_test)
  
-# Ordre des classes (pour les rapports de classification)
-CLASS_ORDER = ["normal", "hyper"]
+    # Filtrer les labels 'unknown' si présents
+    mask = y_test != "unknown"
+    y_test_clean = y_test[mask]
+    y_pred_clean = y_pred[mask]
  
-# Seuils cliniques pour labellisation a posteriori (mg/dL)
-THRESHOLDS  = {"normal": 140}   # seuil unique : < 140 → normal, ≥ 140 → hyper
+    classes_present = [c for c in CLASS_ORDER if c in y_test_clean.values]
+ 
+    return {
+        "accuracy": float(accuracy_score(y_test_clean, y_pred_clean)),
+        "recall":   float(recall_score(y_test_clean, y_pred_clean, average="macro", zero_division=0, labels=classes_present)),
+        "f1":       float(f1_score(y_test_clean, y_pred_clean, average="macro", zero_division=0, labels=classes_present)),
+        "y_test":   y_test_clean.values,
+        "y_pred":   y_pred_clean,
+    }
+ 
 
 
 
+#Vsiualisation de la matrice de confusion
+def plot_confusion_matrix(y_test, y_pred, horizon: str, output_path: str):
+    """Matrice de confusion normalisée par ligne (rappel par classe)."""
+    labels = [c for c in CLASS_ORDER if c in np.unique(np.concatenate([y_test, y_pred]))]
+ 
+    cm = confusion_matrix(y_test, y_pred, labels=labels, normalize="true")
+ 
+    fig, ax = plt.subplots(figsize=(6, 5))
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+    disp.plot(ax=ax, colorbar=True, cmap="Blues", values_format=".2f")
+    ax.set_title(f"Matrice de confusion normalisée\n{MODEL_NAME} — {horizon}", fontsize=10)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"  → Matrice de confusion : {output_path}")
 
-def load_dataset(path: str) -> pd.DataFrame:
-    """Charge le dataset et vérifie les colonnes essentielles."""
-    df = pd.read_csv(path)
-    essential = ["patient_id", "glycemic_label", "cgm_target_t30", "cgm_target_t60", "cgm_target_t90"]
-    missing = [c for c in essential if c not in df.columns]
-    if missing:
-        raise ValueError(f"Colonnes manquantes dans le dataset : {missing}")
-    return df
+def plot_metrics_by_class(report_df: pd.DataFrame, horizon: str, output_path: str):
+    """Barplot des métriques (precision/recall/f1) par classe."""
+    classes = [c for c in CLASS_ORDER if c in report_df.index]
+    metrics = ["precision", "recall", "f1-score"]
+ 
+    x = np.arange(len(classes))
+    width = 0.25
+    colors = ["#1D9E75", "#3B8BD4", "#EF9F27"]
+ 
+    fig, ax = plt.subplots(figsize=(8, 4))
+    for i, (metric, color) in enumerate(zip(metrics, colors)):
+        if metric in report_df.columns:
+            values = [report_df.loc[c, metric] if c in report_df.index else 0 for c in classes]
+            ax.bar(x + i * width, values, width, label=metric, color=color, alpha=0.85)
+ 
+    ax.set_xticks(x + width)
+    ax.set_xticklabels(classes, rotation=15)
+    ax.set_ylabel("Score", fontsize=10)
+    ax.set_ylim(0, 1.1)
+    ax.set_title(f"{MODEL_NAME} — Métriques par classe | {horizon}", fontsize=10)
+    ax.legend(fontsize=9)
+    ax.axhline(0.8, color="gray", linestyle=":", linewidth=0.8, alpha=0.6)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
 
 
-def build_X(df: pd.DataFrame) -> pd.DataFrame:
-    # Travailler sur une copie pour ne pas muter le DataFrame original
-    df = df.copy()
+def plot_roc_curves(pipeline, X_v: pd.DataFrame, y_v: pd.Series,
+                    g_v: pd.Series, horizon_label: str, output_path: str):
+    """
+    Courbe ROC One-vs-Rest agrégée sur tous les folds (macro-average).
 
-    # Normalisation de meal_type AVANT tout encodage
-    df[CATEGORICAL_FEATURE] = (
-        df[CATEGORICAL_FEATURE]
-        .str.strip()
-        .str.lower()
-        .replace({
-            "snack 1": "snacks",
-            "snack":   "snacks",
-            "snacks":  "snacks",   # idempotent, sécurité
-        })
+    POURQUOI ONE-VS-REST ?
+    Avec 3 classes (normal / hyper_mild / hyper_severe), il n'existe pas
+    de courbe ROC directe. OvR entraîne un classificateur binaire par classe
+    et calcule l'AUC de chacun. La macro-average donne un score global.
+
+    POURQUOI PLUS INFORMATIF QUE L'ACCURACY ?
+    L'accuracy masque les déséquilibres de classes. L'AUC mesure la capacité
+    de discrimination du modèle indépendamment du seuil de décision.
+    Un AUC=0.5 → prédiction aléatoire. AUC=1.0 → séparation parfaite.
+    """
+    classes = CLASS_ORDER
+    n_classes = len(classes)
+
+    # Binarisation des labels pour OvR
+    y_bin = label_binarize(y_v, classes=classes)
+
+    splits = get_cv_splits(X_v, y_v, g_v)
+
+    # Accumuler les scores de probabilité sur tous les folds
+    all_y_bin  = np.zeros((len(y_v), n_classes))
+    all_y_prob = np.zeros((len(y_v), n_classes))
+
+    for train_idx, test_idx in splits:
+        pipeline.fit(X_v.iloc[train_idx], y_v.iloc[train_idx])
+        proba = pipeline.predict_proba(X_v.iloc[test_idx])
+
+        # Aligner les colonnes de proba avec CLASS_ORDER
+        trained_classes = list(pipeline.classes_)
+        for j, cls in enumerate(classes):
+            if cls in trained_classes:
+                col = trained_classes.index(cls)
+                all_y_prob[test_idx, j] = proba[:, col]
+
+        all_y_bin[test_idx] = y_bin[test_idx]
+
+    # Tracé
+    colors = ["#1D9E75", "#3B8BD4", "#E24B4A", "#EF9F27"]
+    fig, ax = plt.subplots(figsize=(7, 6))
+
+    aucs = []
+    for i, (cls, color) in enumerate(zip(classes, colors)):
+        fpr, tpr, _ = roc_curve(all_y_bin[:, i], all_y_prob[:, i])
+        roc_auc = auc(fpr, tpr)
+        aucs.append(roc_auc)
+        ax.plot(fpr, tpr, color=color, linewidth=2,
+                label=f"{cls} (AUC={roc_auc:.3f})")
+
+    # Macro-average
+    macro_auc = np.mean(aucs)
+    ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.5, label="Aléatoire (AUC=0.5)")
+    ax.set_xlabel("Taux de faux positifs (1 - Spécificité)", fontsize=10)
+    ax.set_ylabel("Taux de vrais positifs (Sensibilité)", fontsize=10)
+    ax.set_title(
+        f"Courbes ROC One-vs-Rest — {MODEL_NAME}\n"
+        f"{horizon_label} | AUC hyper={aucs[classes.index('hyper')]:.3f}",
+        fontsize=10,
     )
+    ax.legend(fontsize=9, loc="lower right")
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1.02])
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"  → Courbe ROC : {output_path}")
+    print(f"     AUC par classe : { {c: round(a,3) for c,a in zip(classes, aucs)} }")
+    print(f"     AUC macro : {macro_auc:.3f}")
 
-    # Construction de X à partir des features agrégées disponibles
-    available = [c for c in FEATURES_AGG if c in df.columns]
-    X = df[available].copy()
+#Pipeli,e pri,ncipal 
+def run():
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    print(f"  TÂCHE 2 — Classification | Modèle : {MODEL_NAME}")
+    df     = load_dataset(DATASET_PATH)
+    X      = build_X(df)
+    groups = df["patient_id"]
+ 
+    print(f"\n  Dataset : {len(df)} fenêtres | {df['patient_id'].nunique()} patients")
+    print(f"  Features : {X.shape[1]} colonnes (Config A)")
+ 
+    all_results = []
+ 
+    for horizon_key, target_col in HORIZON_TARGETS.items():
+        # Construire les labels depuis la valeur continue à cet horizon
+        y     = build_labels(df, target_col)
+        valid = (y != "unknown") & df[target_col].notna()
+        X_v   = X[valid].reset_index(drop=True)
+        y_v   = y[valid].reset_index(drop=True)
+        g_v   = groups[valid].reset_index(drop=True)
+ 
+        print(f"\n  Horizon {horizon_key} — {valid.sum()} fenêtres valides")
+        print(f"  Distribution labels : {y_v.value_counts().to_dict()}")
+ 
+        pipeline = Pipeline(
+            get_preprocessing() + [("model", LogisticRegression(**LR_PARAMS))]
+        )
+ 
+        splits = get_cv_splits(X_v, y_v, g_v)
+        accs, recalls, f1s = [], [], []
+        all_y_test, all_y_pred = [], []
+ 
+        for fold_idx, (train_idx, test_idx) in enumerate(splits):
+            fold_result = evaluate_fold(
+                pipeline,
+                X_v.iloc[train_idx], y_v.iloc[train_idx],
+                X_v.iloc[test_idx],  y_v.iloc[test_idx],
+            )
+            accs.append(fold_result["accuracy"])
+            recalls.append(fold_result["recall"])
+            f1s.append(fold_result["f1"])
+            all_y_test.extend(fold_result["y_test"])
+            all_y_pred.extend(fold_result["y_pred"])
+ 
+            print(f"    Fold {fold_idx+1} | Acc={fold_result['accuracy']:.3f} | "
+                  f"Recall={fold_result['recall']:.3f} | F1={fold_result['f1']:.3f}"
+                )
+ 
+        acc_m,    acc_s    = np.mean(accs),    np.std(accs)
+        recall_m, recall_s = np.mean(recalls), np.std(recalls)
+        f1_m,     f1_s     = np.mean(f1s),     np.std(f1s)
+ 
+        print(f"\n  → Moyenne | Acc={acc_m:.3f}±{acc_s:.3f} | "
+              f"Recall={recall_m:.3f}±{recall_s:.3f} | F1={f1_m:.3f}±{f1_s:.3f}")
+ 
+        # Rapport détaillé agrégé sur tous les folds
+        y_test_all = np.array(all_y_test)
+        y_pred_all = np.array(all_y_pred)
+        classes_all = [c for c in CLASS_ORDER if c in np.unique(y_test_all)]
+ 
+        report = classification_report(
+            y_test_all, y_pred_all,
+            labels=classes_all,
+            output_dict=True,
+            zero_division=0,
+        )
+        report_df = pd.DataFrame(report).T
+        report_df.to_csv(
+            os.path.join(OUTPUT_DIR, f"classification_report_{horizon_key}.csv")
+        )
+ 
+        # Graphiques
+        plot_confusion_matrix(
+            y_test_all, y_pred_all,
+            f"t+{horizon_key[1:]} min",
+            output_path=os.path.join(OUTPUT_DIR, f"confusion_matrix_{horizon_key}.png"),
+        )
+        plot_metrics_by_class(
+            report_df, f"t+{horizon_key[1:]} min",
+            output_path=os.path.join(OUTPUT_DIR, f"metrics_by_class_{horizon_key}.png"),
+        )
 
-    # One-hot encoding de meal_type sur données déjà normalisées
-    if CATEGORICAL_FEATURE in df.columns:
-        dummies = pd.get_dummies(df[CATEGORICAL_FEATURE], prefix="meal", drop_first=False)
-        X = pd.concat([X.reset_index(drop=True), dummies.reset_index(drop=True)], axis=1)
-
-    return X
-
-
-
-
-def get_preprocessing():
-    """
-    Retourne le pre processeur partagé : imputation médiane + standardisation.
-    À intégrer dans chaque Pipeline sklearn.
-    Note : le fit se fait UNIQUEMENT sur le train de chaque fold.
-    """
-    return [
-        ("imputer", SimpleImputer(strategy="median")),
-        ("scaler",  StandardScaler()),
-    ]
+        # Courbe ROC One-vs-Rest
+        pipeline_roc = Pipeline(
+            get_preprocessing() + [("model", LogisticRegression(**LR_PARAMS))]
+        )
+        plot_roc_curves(
+            pipeline_roc, X_v, y_v, g_v,
+            horizon_label=f"t+{horizon_key[1:]} min",
+            output_path=os.path.join(OUTPUT_DIR, f"roc_curves_{horizon_key}.png"),
+        )
+ 
+        all_results.append({
+            "model":      MODEL_NAME,
+            "task":       "classification",
+            "horizon":    f"t+{horizon_key[1:]} min",
+            "accuracy_mean":  round(acc_m, 3),
+            "accuracy_std":   round(acc_s, 3),
+            "recall_mean":    round(recall_m, 3),
+            "recall_std":     round(recall_s, 3),
+            "f1_mean":        round(f1_m, 3),
+            "f1_std":         round(f1_s, 3),
+            "n_features":     X_v.shape[1],
+            "class_weight":   "balanced",
+        })
+ 
+    save_results(all_results, os.path.join(OUTPUT_DIR, "results_logistic_regression_classification.csv"))
+    
  
 
+if __name__ == "__main__":
+    run()
 
-def get_cv_splits(X: pd.DataFrame, y: pd.Series, groups: pd.Series):
-    """
-    Génère les splits GroupKFold.
-    Retourne une liste de tuples (train_idx, test_idx).
-    """
-    gkf = GroupKFold(n_splits=N_FOLDS)
-    return list(gkf.split(X, y, groups=groups))
- 
- 
-def label_from_value(v: float) -> str:
-    if np.isnan(v):
-        return "unknown"
-    return "normal" if v < THRESHOLDS["normal"] else "hyper"
- 
-
-
-def save_results(results: list[dict], output_path: str):
-    """Sauvegarde une liste de dictionnaires résultats en CSV."""
-    import os
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    pd.DataFrame(results).to_csv(output_path, index=False)
-    print(f"  → Résultats sauvegardés : {output_path}")
  
