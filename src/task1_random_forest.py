@@ -22,6 +22,7 @@ from sklearn.model_selection import GroupKFold
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
  
+from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
@@ -146,6 +147,84 @@ def plot_learning_curve(pipeline: Pipeline, X: pd.DataFrame, y: pd.Series, group
     print(f" ->  Courbe d'apprentissage : {output_path}")
 
 
+def run_gridsearch_t60(X_v: pd.DataFrame, y_v: pd.Series, g_v: pd.Series):
+    """
+    GridSearch avec nested CV sur t+60 min uniquement.
+
+    POURQUOI NESTED CV ?
+    Sans nested CV, le GridSearch sélectionne les meilleurs hyperparamètres
+    sur les mêmes folds utilisés pour évaluer la performance → biais optimiste.
+    Avec nested CV :
+    - Boucle EXTERNE (GroupKFold k=5) : évalue la performance réelle du
+      meilleur modèle sélectionné par la boucle interne → pas de leakage.
+    - Boucle INTERNE (GridSearchCV k=3) : sélectionne les hyperparamètres
+      optimaux sur le train de chaque fold externe uniquement.
+    """
+    print("\n  GridSearch RF — t+60 min (nested CV)")
+
+    param_grid = {
+        "model__max_depth":    [3, 5, 8, 10],
+        "model__n_estimators": [100, 200, 300],
+    }
+
+    base_pipeline = Pipeline(
+        get_preprocessing() + [("model", RandomForestRegressor(
+            min_samples_leaf=5,
+            max_features="sqrt",
+            random_state=RANDOM_STATE,
+            n_jobs=-1,
+        ))]
+    )
+
+    # Boucle interne : GridSearch sur k=3 folds
+    inner_cv = GroupKFold(n_splits=3)
+    grid_search = GridSearchCV(
+        base_pipeline,
+        param_grid,
+        cv=inner_cv,
+        scoring="neg_root_mean_squared_error",
+        refit=True,
+        n_jobs=-1,
+    )
+
+    # Boucle externe : évaluation réelle sur k=5 folds
+    outer_cv = GroupKFold(n_splits=N_FOLDS)
+    outer_rmses = []
+    best_params_per_fold = []
+
+    for fold_idx, (train_idx, test_idx) in enumerate(outer_cv.split(X_v, y_v, groups=g_v)):
+        X_train, X_test = X_v.iloc[train_idx], X_v.iloc[test_idx]
+        y_train, y_test = y_v.iloc[train_idx], y_v.iloc[test_idx]
+        g_train = g_v.iloc[train_idx]
+
+        grid_search.fit(X_train, y_train, groups=g_train)
+        y_pred = grid_search.predict(X_test)
+        rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
+        outer_rmses.append(rmse)
+        best_params_per_fold.append(grid_search.best_params_)
+
+        print(f"    Fold {fold_idx+1} | RMSE={rmse:.2f} | "
+              f"best_params={grid_search.best_params_}")
+
+    rmse_m = np.mean(outer_rmses)
+    rmse_s = np.std(outer_rmses)
+    print(f"\n  → GridSearch RF t+60 | RMSE={rmse_m:.2f}±{rmse_s:.2f} mg/dL")
+
+    # Paramètres les plus fréquents sur les 5 folds
+    params_df = pd.DataFrame(best_params_per_fold)
+    print("\n  Hyperparamètres sélectionnés par fold :")
+    print(params_df.to_string(index=False))
+
+    most_common = {
+        col: params_df[col].mode()[0] for col in params_df.columns
+    }
+    print(f"\n  Paramètres les plus fréquents : {most_common}")
+    print(f"  → Utiliser ces valeurs pour mettre à jour RF_PARAMS si amélioration confirmée")
+
+    return rmse_m, rmse_s, most_common, params_df
+
+
+
 #Pipeline d'entraînement et évaluation
 def run():
     from sklearn.model_selection import GroupKFold
@@ -212,6 +291,14 @@ def run():
                 pipeline, X_v, y_v, g_v,
                 output_path=os.path.join(OUTPUT_DIR, "learning_curve_t60.png"),
             )
+            # --- GRIDSEARCH nested CV ---
+            gs_rmse_m, gs_rmse_s, best_params, params_df = run_gridsearch_t60(X_v, y_v, g_v)
+            params_df.to_csv(
+                os.path.join(OUTPUT_DIR, "gridsearch_best_params_t60.csv"), index=False
+            )
+            print(f"\n  Comparaison RF fixe vs GridSearch à t+60 :")
+            print(f"  RF fixe    : RMSE={rmse_m:.2f}±{rmse_s:.2f}")
+            print(f"  RF GridSearch : RMSE={gs_rmse_m:.2f}±{gs_rmse_s:.2f}")
  
         all_results.append({
             "model": MODEL_NAME,
@@ -234,4 +321,3 @@ def run():
  
 if __name__ == "__main__":
     run()
-
