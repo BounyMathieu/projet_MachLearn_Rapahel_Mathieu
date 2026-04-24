@@ -24,6 +24,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
  
+from sklearn.metrics import roc_curve, auc 
+from sklearn.preprocessing import label_binarize
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import (
@@ -136,8 +138,78 @@ def plot_metrics_by_class(report_df: pd.DataFrame, horizon: str, output_path: st
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
- 
 
+
+def plot_roc_curves(pipeline, X_v: pd.DataFrame, y_v: pd.Series,
+                    g_v: pd.Series, horizon_label: str, output_path: str):
+    """
+    Courbe ROC One-vs-Rest agrégée sur tous les folds (macro-average).
+
+    POURQUOI ONE-VS-REST ?
+    Avec 3 classes (normal / hyper_mild / hyper_severe), il n'existe pas
+    de courbe ROC directe. OvR entraîne un classificateur binaire par classe
+    et calcule l'AUC de chacun. La macro-average donne un score global.
+
+    POURQUOI PLUS INFORMATIF QUE L'ACCURACY ?
+    L'accuracy masque les déséquilibres de classes. L'AUC mesure la capacité
+    de discrimination du modèle indépendamment du seuil de décision.
+    Un AUC=0.5 → prédiction aléatoire. AUC=1.0 → séparation parfaite.
+    """
+    classes = CLASS_ORDER
+    n_classes = len(classes)
+
+    # Binarisation des labels pour OvR
+    y_bin = label_binarize(y_v, classes=classes)
+
+    splits = get_cv_splits(X_v, y_v, g_v)
+
+    # Accumuler les scores de probabilité sur tous les folds
+    all_y_bin  = np.zeros((len(y_v), n_classes))
+    all_y_prob = np.zeros((len(y_v), n_classes))
+
+    for train_idx, test_idx in splits:
+        pipeline.fit(X_v.iloc[train_idx], y_v.iloc[train_idx])
+        proba = pipeline.predict_proba(X_v.iloc[test_idx])
+
+        # Aligner les colonnes de proba avec CLASS_ORDER
+        trained_classes = list(pipeline.classes_)
+        for j, cls in enumerate(classes):
+            if cls in trained_classes:
+                col = trained_classes.index(cls)
+                all_y_prob[test_idx, j] = proba[:, col]
+
+        all_y_bin[test_idx] = y_bin[test_idx]
+
+    # Tracé
+    colors = ["#1D9E75", "#3B8BD4", "#E24B4A", "#EF9F27"]
+    fig, ax = plt.subplots(figsize=(7, 6))
+
+    aucs = []
+    for i, (cls, color) in enumerate(zip(classes, colors)):
+        fpr, tpr, _ = roc_curve(all_y_bin[:, i], all_y_prob[:, i])
+        roc_auc = auc(fpr, tpr)
+        aucs.append(roc_auc)
+        ax.plot(fpr, tpr, color=color, linewidth=2,
+                label=f"{cls} (AUC={roc_auc:.3f})")
+
+    # Macro-average
+    macro_auc = np.mean(aucs)
+    ax.plot([0, 1], [0, 1], "k--", linewidth=1, alpha=0.5, label="Aléatoire (AUC=0.5)")
+    ax.set_xlabel("Taux de faux positifs (1 - Spécificité)", fontsize=10)
+    ax.set_ylabel("Taux de vrais positifs (Sensibilité)", fontsize=10)
+    ax.set_title(
+        f"Courbes ROC One-vs-Rest — {MODEL_NAME}\n"
+        f"{horizon_label} | AUC hyper={aucs[classes.index('hyper')]:.3f}",
+        fontsize=10,
+    )
+    ax.legend(fontsize=9, loc="lower right")
+    ax.set_xlim([0, 1]); ax.set_ylim([0, 1.02])
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"  → Courbe ROC : {output_path}")
+    print(f"     AUC par classe : { {c: round(a,3) for c,a in zip(classes, aucs)} }")
+    print(f"     AUC macro : {macro_auc:.3f}")
 
 #Pipeli,e pri,ncipal 
 def run():
@@ -219,6 +291,16 @@ def run():
         plot_metrics_by_class(
             report_df, f"t+{horizon_key[1:]} min",
             output_path=os.path.join(OUTPUT_DIR, f"metrics_by_class_{horizon_key}.png"),
+        )
+
+        # Courbe ROC One-vs-Rest
+        pipeline_roc = Pipeline(
+            get_preprocessing() + [("model", LogisticRegression(**LR_PARAMS))]
+        )
+        plot_roc_curves(
+            pipeline_roc, X_v, y_v, g_v,
+            horizon_label=f"t+{horizon_key[1:]} min",
+            output_path=os.path.join(OUTPUT_DIR, f"roc_curves_{horizon_key}.png"),
         )
  
         all_results.append({
